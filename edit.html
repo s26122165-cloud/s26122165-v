@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cute Meme Generator - Trình Tạo Meme Nhẹ Nhàng</title>
+
+  <!-- Google Fonts: Quicksand & Fredoka (Nhẹ nhàng, đáng yêu, hỗ trợ Tiếng Việt) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CDN html2canvas: Chuyển đổi HTML/DOM thành ảnh PNG -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Thiết lập font chữ & nền pastel tổng thể */
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(135deg, #fdfbf7 0%, #eef2f3 50%, #fceade 100%);
+      color: #5a5266;
+      min-height: 100vh;
+    }
+
+    /* Font chữ đáng yêu dành riêng cho văn bản Meme */
+    .font-meme {
+      font-family: 'Fredoka', 'Quicksand', sans-serif;
+    }
+
+    /* Viền chữ sắc nét nhưng mềm mại giúp đọc tốt trên mọi nền ảnh */
+    .meme-text-shadow {
+      text-shadow:
+        2px 2px 0 var(--stroke-color, #000), -2px -2px 0 var(--stroke-color, #000),
+        2px -2px 0 var(--stroke-color, #000), -2px 2px 0 var(--stroke-color, #000),
+        0px 2px 0 var(--stroke-color, #000), 0px -2px 0 var(--stroke-color, #000),
+        2px 0px 0 var(--stroke-color, #000), -2px 0px 0 var(--stroke-color, #000),
+        0px 4px 10px rgba(0,0,0,0.3);
+    }
+
+    /* Đổ bóng Ambient Soft mượt mà kiểu Pastel */
+    .pastel-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 10px 30px -5px rgba(230, 200, 210, 0.4), 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    /* Nút bấm Soft Gradient Pastel */
+    .btn-pastel {
+      background: linear-gradient(135deg, #ffb7b2 0%, #ffdac1 50%, #e2f0cb 100%);
+      color: #4a3e3d;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-pastel:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(255, 183, 178, 0.5);
+    }
+
+    /* Tùy chỉnh thanh trượt pastel */
+    input[type=range] {
+      accent-color: #ff9aa2;
+    }
+
+    /* Cuộn trang mượt */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #fdfbf7;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ffb7b2;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <!-- Header Nhẹ Nhàng Mộng Mơ -->
+  <header class="border-b border-pink-100 bg-white/70 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-pink-100 border border-pink-200 flex items-center justify-center text-pink-400 font-bold text-xl shadow-sm">
+          🎀
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-bold tracking-wide text-slate-700 font-meme">
+            Cute<span class="text-pink-400">Meme</span>
+          </h1>
+          <p class="text-[11px] text-slate-400 -mt-1 font-medium">Trình Tạo Meme Nhẹ Nhàng & Dễ Thương</p>
+        </div>
+      </div>
+      <span class="text-xs px-3 py-1 rounded-full bg-pink-50 text-pink-500 font-semibold border border-pink-100 shadow-sm">
+        ✨ Pastel Edition
+      </span>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- ==================== CONTROL PANEL (Bên trái / Trên) ==================== -->
+    <section class="lg:col-span-5 flex flex-col gap-5 p-5 md:p-6 rounded-3xl pastel-card">
+      
+      <div class="border-b border-pink-100 pb-3 flex items-center justify-between">
+        <h2 class="text-base font-bold text-slate-700 flex items-center gap-2">
+          <span>🌸</span> Bảng Điều Khiển
+        </h2>
+        <span class="text-xs text-pink-400 font-medium">Tùy chỉnh dễ dàng</span>
+      </div>
+
+      <!-- 1. Tải ảnh lên (FileReader + Drag and Drop) -->
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-600">1. Chọn hình nền (Upload Image)</label>
+        <div id="drop-zone" class="border-2 border-dashed border-pink-200 hover:border-pink-300 rounded-2xl p-4 text-center cursor-pointer bg-pink-50/30 hover:bg-pink-50/70 transition-all relative group">
+          <input type="file" id="image-loader" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+          <div class="space-y-1 pointer-events-none">
+            <div class="w-10 h-10 mx-auto rounded-full bg-white flex items-center justify-center text-pink-400 shadow-sm group-hover:scale-110 transition-transform">
+              🖼️
+            </div>
+            <p class="text-xs font-bold text-slate-600">Bấm vào đây hoặc kéo thả ảnh vào</p>
+            <p class="text-[11px] text-slate-400">Hỗ trợ PNG, JPG, WEBP (Đọc trực tiếp trên máy)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Nhập văn bản Meme -->
+      <div class="space-y-3">
+        <div>
+          <label for="top-text-input" class="block text-xs font-bold text-slate-600 mb-1">2. Dòng chữ phía trên (Top Text)</label>
+          <input type="text" id="top-text-input" value="Khi bạn cố hoàn thành công việc" placeholder="Nhập chữ phía trên..." 
+            class="w-full bg-white/90 border border-pink-100 focus:border-pink-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-700 outline-none transition-all shadow-sm">
+        </div>
+
+        <div>
+          <label for="bottom-text-input" class="block text-xs font-bold text-slate-600 mb-1">3. Dòng chữ phía dưới (Bottom Text)</label>
+          <input type="text" id="bottom-text-input" value="Nhưng đời trao cho bạn sự đáng yêu" placeholder="Nhập chữ phía dưới..." 
+            class="w-full bg-white/90 border border-pink-100 focus:border-pink-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-700 outline-none transition-all shadow-sm">
+        </div>
+      </div>
+
+      <!-- 3. Các thanh trượt tinh chỉnh -->
+      <div class="space-y-3.5 pt-2 border-t border-pink-100">
+        <h3 class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+          <span>🎨</span> Điều chỉnh kích thước & Vị trí
+        </h3>
+
+        <!-- Cỡ chữ -->
+        <div>
+          <div class="flex justify-between text-xs text-slate-500 mb-1">
+            <span>Cỡ chữ (Font Size)</span>
+            <span id="font-size-val" class="font-bold text-pink-400">38px</span>
+          </div>
+          <input type="range" id="font-size-slider" min="16" max="80" value="38" class="w-full h-1.5 bg-pink-100 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Vị trí chữ trên -->
+        <div>
+          <div class="flex justify-between text-xs text-slate-500 mb-1">
+            <span>Vị trí chữ trên (Top Position)</span>
+            <span id="top-pos-val" class="font-bold text-pink-400">5%</span>
+          </div>
+          <input type="range" id="top-pos-slider" min="0" max="45" value="5" class="w-full h-2 bg-pink-100 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Vị trí chữ dưới -->
+        <div>
+          <div class="flex justify-between text-xs text-slate-500 mb-1">
+            <span>Vị trí chữ dưới (Bottom Position)</span>
+            <span id="bottom-pos-val" class="font-bold text-pink-400">5%</span>
+          </div>
+          <input type="range" id="bottom-pos-slider" min="0" max="45" value="5" class="w-full h-2 bg-pink-100 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Chọn màu chữ & Viền chữ -->
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="flex items-center gap-2 bg-white/80 p-2 rounded-xl border border-pink-100">
+            <input type="color" id="text-color-picker" value="#ffffff" class="w-7 h-7 rounded-lg border-0 bg-transparent cursor-pointer">
+            <label for="text-color-picker" class="text-xs font-semibold text-slate-600">Màu chữ</label>
+          </div>
+          <div class="flex items-center gap-2 bg-white/80 p-2 rounded-xl border border-pink-100">
+            <input type="color" id="stroke-color-picker" value="#000000" class="w-7 h-7 rounded-lg border-0 bg-transparent cursor-pointer">
+            <label for="stroke-color-picker" class="text-xs font-semibold text-slate-600">Màu viền</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Nút tải về -->
+      <div class="pt-2 mt-auto">
+        <button id="download-btn" class="w-full btn-pastel font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 shadow-md cursor-pointer text-sm">
+          <span>💖</span>
+          <span>Tải Ảnh Meme Về Máy (Download)</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ==================== MEME PREVIEW (Bên phải / Dưới) ==================== -->
+    <section class="lg:col-span-7 flex flex-col items-center justify-center p-4 md:p-6 rounded-3xl pastel-card min-h-[420px]">
+      
+      <div class="w-full flex items-center justify-between mb-3 px-1">
+        <span class="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-pink-400 animate-pulse"></span>
+          Xem Trước (PREVIEW)
+        </span>
+        <span class="text-[11px] text-pink-400 font-medium bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-100">
+          Tỉ lệ tự động
+        </span>
+      </div>
+
+      <!-- Khung chứa Meme (Target để html2canvas chụp) -->
+      <div id="meme-container" class="relative max-w-full overflow-hidden rounded-2xl shadow-xl bg-white flex items-center justify-center border border-pink-100 select-none">
+        
+        <!-- Ảnh nền Meme mặc định -->
+        <img id="meme-image" src="https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&auto=format&fit=crop&q=80" alt="Meme Background" class="max-h-[65vh] w-auto object-contain block">
+
+        <!-- Dòng chữ phía trên -->
+        <div id="top-text-display" class="absolute top-[5%] left-0 right-0 px-4 text-center font-meme text-white tracking-wide uppercase leading-tight meme-text-shadow break-words pointer-events-none" style="font-size: 38px;">
+          Khi bạn cố hoàn thành công việc
+        </div>
+
+        <!-- Dòng chữ phía dưới -->
+        <div id="bottom-text-display" class="absolute bottom-[5%] left-0 right-0 px-4 text-center font-meme text-white tracking-wide uppercase leading-tight meme-text-shadow break-words pointer-events-none" style="font-size: 38px;">
+          Nhưng đời trao cho bạn sự đáng yêu
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="border-t border-pink-100 bg-white/50 py-3.5 text-center text-xs text-slate-400">
+    <p>🌸 Thiết kế nhẹ nhàng dành cho bạn • Cute Meme Studio 🌸</p>
+  </footer>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // --- 1. Lấy các phần tử DOM ---
+      const imageLoader = document.getElementById('image-loader');
+      const dropZone = document.getElementById('drop-zone');
+      const memeImage = document.getElementById('meme-image');
+      const memeContainer = document.getElementById('meme-container');
+
+      const topTextInput = document.getElementById('top-text-input');
+      const bottomTextInput = document.getElementById('bottom-text-input');
+      const topTextDisplay = document.getElementById('top-text-display');
+      const bottomTextDisplay = document.getElementById('bottom-text-display');
+
+      const fontSizeSlider = document.getElementById('font-size-slider');
+      const fontSizeVal = document.getElementById('font-size-val');
+
+      const topPosSlider = document.getElementById('top-pos-slider');
+      const topPosVal = document.getElementById('top-pos-val');
+
+      const bottomPosSlider = document.getElementById('bottom-pos-slider');
+      const bottomPosVal = document.getElementById('bottom-pos-val');
+
+      const textColorPicker = document.getElementById('text-color-picker');
+      const strokeColorPicker = document.getElementById('stroke-color-picker');
+      const downloadBtn = document.getElementById('download-btn');
+
+      // --- 2. Đọc ảnh từ máy người dùng (FileReader - Tránh lỗi CORS) ---
+      function processFile(file) {
+        if (!file || !file.type.match('image.*')) {
+          alert('Vui lòng chọn một tệp hình ảnh hợp lệ (PNG, JPG, WEBP)!');
+          return;
+        }
+
+        const reader = new FileReader();
+        // Khi đọc xong file ảnh
+        reader.onload = (e) => {
+          memeImage.src = e.target.result; // Gán dữ liệu DataURL cho thẻ img
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Xử lý khi chọn tệp qua nút upload
+      imageLoader.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        processFile(file);
+      });
+
+      // Xử lý Drag and Drop (Kéo thả ảnh)
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-pink-400', 'bg-pink-100/50');
+      });
+
+      dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-pink-400', 'bg-pink-100/50');
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-pink-400', 'bg-pink-100/50');
+        const file = e.dataTransfer.files[0];
+        processFile(file);
+      });
+
+      // --- 3. Đồng bộ văn bản hiển thị theo thời gian thực ---
+      topTextInput.addEventListener('input', () => {
+        topTextDisplay.innerText = topTextInput.value;
+      });
+
+      bottomTextInput.addEventListener('input', () => {
+        bottomTextDisplay.innerText = bottomTextInput.value;
+      });
+
+      // --- 4. Điều chỉnh kích thước, vị trí & màu sắc ---
+      // Điều chỉnh cỡ chữ
+      fontSizeSlider.addEventListener('input', () => {
+        const size = `${fontSizeSlider.value}px`;
+        topTextDisplay.style.fontSize = size;
+        bottomTextDisplay.style.fontSize = size;
+        fontSizeVal.innerText = size;
+      });
+
+      // Điều chỉnh vị trí chữ trên
+      topPosSlider.addEventListener('input', () => {
+        const pos = `${topPosSlider.value}%`;
+        topTextDisplay.style.top = pos;
+        topPosVal.innerText = pos;
+      });
+
+      // Điều chỉnh vị trí chữ dưới
+      bottomPosSlider.addEventListener('input', () => {
+        const pos = `${bottomPosSlider.value}%`;
+        bottomTextDisplay.style.bottom = pos;
+        bottomPosVal.innerText = pos;
+      });
+
+      // Thay đổi màu chữ
+      textColorPicker.addEventListener('input', () => {
+        const color = textColorPicker.value;
+        topTextDisplay.style.color = color;
+        bottomTextDisplay.style.color = color;
+      });
+
+      // Thay đổi màu viền chữ
+      strokeColorPicker.addEventListener('input', () => {
+        const strokeColor = strokeColorPicker.value;
+        topTextDisplay.style.setProperty('--stroke-color', strokeColor);
+        bottomTextDisplay.style.setProperty('--stroke-color', strokeColor);
+      });
+
+      // --- 5. Tải ảnh Meme về máy bằng html2canvas ---
+      downloadBtn.addEventListener('click', () => {
+        // Cập nhật trạng thái nút bấm đang xử lý
+        const originalText = downloadBtn.innerHTML;
+        downloadBtn.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Đang tạo ảnh...</span>
+        `;
+        downloadBtn.disabled = true;
+
+        // Tiến hành chụp khung #meme-container
+        html2canvas(memeContainer, {
+          scale: 2, // Đảm bảo độ nét cao (HD 2x)
+          useCORS: true,
+          backgroundColor: null
+        }).then(canvas => {
+          // Chuyển Canvas thành Data URL
+          const imageURI = canvas.toDataURL('image/png');
+
+          // Tạo liên kết ẩn để tự động tải về
+          const link = document.createElement('a');
+          link.href = imageURI;
+          link.download = 'my-meme.png';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          // Khôi phục nút
+          downloadBtn.innerHTML = originalText;
+          downloadBtn.disabled = false;
+        }).catch(err => {
+          console.error('Lỗi khi xuất ảnh:', err);
+          alert('Có lỗi xảy ra khi tải ảnh, vui lòng thử lại!');
+          downloadBtn.innerHTML = originalText;
+          downloadBtn.disabled = false;
+        });
+      });
+
+    });
+  </script>
+</body>
+</html>
